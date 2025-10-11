@@ -64,7 +64,7 @@ class FruitsTF(Node):
         else:
             self.cb_group = ReentrantCallbackGroup()
 
-        # Subscriptions
+        # Subscriptions - CORRECTED TOPIC NAMES
         self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10, callback_group=self.cb_group)
         self.create_subscription(Image, '/camera/depth/image_raw', self.depthimagecb, 10, callback_group=self.cb_group)
 
@@ -73,6 +73,7 @@ class FruitsTF(Node):
 
         if SHOW_IMAGE:
             cv2.namedWindow('fruits_tf_view', cv2.WINDOW_NORMAL)
+            cv2.namedWindow('Mask View', cv2.WINDOW_NORMAL) # Add a window for the mask
         
         # TF Broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -92,17 +93,7 @@ class FruitsTF(Node):
         Returns:
             None
         '''
-
-        ############ ADD YOUR CODE HERE ############
-
-        # INSTRUCTIONS & HELP : 
-        #  -> Use `data` variable to convert ROS Image message to CV2 Image type
-        #  -> HINT: You may use CvBridge to do the same
-        #  -> Store the converted image into `self.depth_image`
-
-        ############################################
         try:
-            # The depth image from simulation is typically encoded in 16-bit unsigned int (millimeters)
             self.depth_image = self.bridge.imgmsg_to_cv2(data, desired_encoding='16UC1')
         except Exception as e:
             self.get_logger().error(f"Failed to convert depth image: {e}")
@@ -119,20 +110,7 @@ class FruitsTF(Node):
         Returns:
             None
         '''
-
-        ############ ADD YOUR CODE HERE ############
-
-        # INSTRUCTIONS & HELP :
-        #  -> Use `data` variable to convert ROS Image message to CV2 Image type
-        #  -> HINT: You may use CvBridge to do the same
-        #  -> Store the converted image into `self.cv_image`
-        #  -> Check if you need any rotation or flipping of the image 
-        #     (as input data may be oriented differently than expected).
-        #     You may use cv2 functions such as `cv2.flip` or `cv2.rotate`.
-
-        ############################################
         try:
-            # Convert the ROS Image message to a BGR OpenCV image.
             self.cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except Exception as e:
             self.get_logger().error(f"Failed to convert color image: {e}")
@@ -149,52 +127,16 @@ class FruitsTF(Node):
         Returns:
             list: A list of detected bad fruit information, where each entry is a dictionary containing:
                   - 'center': (x, y) coordinates of the fruit center
-                  - 'distance': distance from the camera in meters
-                  - 'angle': angle of the fruit in degrees
-                  - 'width': width of the fruit in pixels
                   - 'id': unique identifier for the fruit
         '''
-        ############ ADD YOUR CODE HERE ############
-        # INSTRUCTIONS & HELP :
-        #  ->  Implement bad fruit detection logic using image processing techniques
-        #  ->  You may use techniques such as color filtering, contour detection, etc.
-        #  ->  For each detected bad fruit, create a dictionary with its information and append
-        #      to the bad_fruits list
-        #  ->  Return the bad_fruits list at the end of the function
-        # Step 1: Convert RGB image to HSV color space
-        #  - Use cv2.cvtColor to convert the input image to HSV for better color segmentation
-
-        # Step 2: Define lower and upper HSV bounds for "bad fruit" color
-        #  - Choose HSV ranges that correspond to the color of bad fruits (e.g., brown/black spots)
-
-        # Step 3: Create a binary mask using cv2.inRange
-        #  - This mask highlights pixels within the specified HSV range
-
-        # Step 4: Find contours in the mask
-        #  - Use cv2.findContours to detect continuous regions (potential bad fruits)
-
-        # Step 5: Loop through each contour
-        #  - Filter out small contours by area threshold to remove noise
-        #  - For each valid contour:
-        #      a. Compute bounding rectangle (cv2.boundingRect)
-        #      b. Calculate center coordinates (cX, cY)
-        #      c. (Optional) Calculate distance and angle if depth data is available
-        #      d. Store fruit info (center, distance, angle, width, id) in a dictionary
-        #      e. Append dictionary to bad_fruits list
-
-        # Step 6: Return the bad_fruits list
         bad_fruits = []
-
-        # TODO: Implement bad fruit detection logic here
-        # You may use image processing techniques such as color filtering, contour detection, etc.
-        # For each detected bad fruit, append its information to the bad_fruits list
-        
         hsv_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2HSV)
 
         # Define the lower and upper bounds for the greyish-white color in HSV
-        # This range might need tuning depending on the simulation's lighting
-        lower_bound = np.array([0, 0, 160])
-        upper_bound = np.array([180, 50, 255])
+        # Tuned based on user-provided values from color picker: HSV(30, 10, 53)
+        # Converted to OpenCV scale and a range created around it.
+        lower_bound = np.array([5, 0, 100])
+        upper_bound = np.array([25, 40, 170])
 
         # Create the mask
         mask = cv2.inRange(hsv_image, lower_bound, upper_bound)
@@ -202,6 +144,10 @@ class FruitsTF(Node):
         # Optional: Apply morphological operations to reduce noise
         mask = cv2.erode(mask, None, iterations=2)
         mask = cv2.dilate(mask, None, iterations=2)
+        
+        # Show the mask in its own window for debugging
+        if SHOW_IMAGE:
+            cv2.imshow('Mask View', mask)
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -236,111 +182,47 @@ class FruitsTF(Node):
     def process_image(self):
         '''
         Description:    Timer-driven loop for periodic image processing.
-
-        Returns:
-            None
         '''
-        ############ Function VARIABLES ############
-
-        # These are the variables defined from camera info topic such as image pixel size, focalX, focalY, etc.
-        # Make sure you verify these variable values once. As it may affect your result.
-        # You can find more on these variables here -> http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/CameraInfo.html
-        
+        # Camera intrinsic parameters (approximate for Gazebo)
         sizeCamX = 1280
         sizeCamY = 720
-        centerCamX = 640.0 # From default Gazebo camera parameters
-        centerCamY = 360.0 # From default Gazebo camera parameters
-        focalX = 910.0 # Approximate value for Gazebo camera
-        focalY = 910.0 # Approximate value for Gazebo camera
-                
-
-        ############ ADD YOUR CODE HERE ############
-
-        # INSTRUCTIONS & HELP : 
-
-        #  ->  Get fruit center, distance from rgb, angle, width and ids list from 'detect_fruit_center' defined above
-
-        #  ->  Loop over detected box ids received to calculate position and orientation transform to publish TF 
-
-        #  
-        #  ->  Use center_fruit_list to get realsense depth and log them down.
-
-        #  ->  Use this formula to rectify x, y, z based on focal length, center value and size of image
-        #      x = distance_from_rgb * (cX - centerCamX) / focalX
-        #      y = distance_from_rgb * (cY - centerCamY) / focalY
-        #      z = distance_from_rgb
-        #      where, 
-        #            cX, and cY from 'center_fruit_list'
-        #            distance_from_rgb is depth of object calculated in previous step
-        #            sizeCamX, sizeCamY, centerCamX, centerCamY, focalX and focalY are defined above
-
-        #  ->  Now, mark the center points on image frame using cX and cY variables with help of 'cv2.circle' function 
-
-        #  ->  Here, till now you receive coordinates from camera_link to fruit center position. 
-        #      So, publish this transform w.r.t. camera_link using Geometry Message - TransformStamped 
-        #      so that we will collect its position w.r.t base_link in next step.
-        #      Use the following frame_id-
-        #            frame_id = 'camera_link'
-        #            child_frame_id = 'cam_<fruit_id>'        Ex: cam_20, where 20 is fruit ID
-
-        #  ->  Then finally lookup transform between base_link and obj frame to publish the TF
-        #      You may use 'lookup_transform' function to pose of obj frame w.r.t base_link 
-
-        #  ->  And now publish TF between object frame and base_link
-        #      Use the following frame_id-
-        #            frame_id = 'base_link'
-        #            child_frame_id = f'{teamid}_bad_fruit_{fruit_id}'   Ex: 5_bad_fruit_1, where 5 is team ID and 1 is fruit ID
-
-        #  ->  At last show cv2 image window having detected markers drawn and center points located using 'cv2.imshow' function.
-        #      Refer MD book on portal for sample image -> https://portal.e-yantra.org/
+        centerCamX = 640.0
+        centerCamY = 360.0
+        focalX = 910.0
+        focalY = 910.0
         
         if self.cv_image is None or self.depth_image is None:
             return
 
-        # Create a copy for visualization to avoid modifying the original image
         visual_image = self.cv_image.copy()
-        
         detected_fruits = self.bad_fruit_detection(visual_image)
 
         for fruit in detected_fruits:
             cX, cY = fruit['center']
             fruit_id = fruit['id']
 
-            # Get depth value from depth image (in millimeters)
             distance_in_mm = self.depth_image[cY, cX]
-
-            # If depth is 0, it means the sensor couldn't get a reading, so skip this detection
             if distance_in_mm == 0:
                 continue
 
-            # Convert depth from millimeters to meters
             distance_from_rgb = float(distance_in_mm) / 1000.0
             
-            # The Gazebo camera link has Y pointing down, Z pointing forward, X pointing right.
-            # We need to adjust the formula to match ROS conventions (X forward, Y left, Z up).
-            # The transform from the optical frame to the camera_link frame is usually handled by the static_transform_publisher in the launch file.
-            # Let's calculate in the camera optical frame first (Z forward, X right, Y down).
             z = distance_from_rgb
             x = z * (cX - centerCamX) / focalX
             y = z * (cY - centerCamY) / focalY
 
-            # Mark the center point on the visual image
             cv2.circle(visual_image, (cX, cY), 5, (255, 0, 0), -1)
 
-            # Publish the transform from 'camera_link' to the fruit's frame
             t = TransformStamped()
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = 'camera_link'
             t.child_frame_id = f'{self.team_id}_bad_fruit_{fruit_id}'
 
-            # The calculated coordinates are in the camera's optical frame.
-            # We publish them directly. The static transform between `camera_optical_frame`
-            # and `camera_link` should handle the coordinate system change. For Gazebo, this is often the same.
+            # Transform from camera optical frame (Z-fwd, X-right, Y-down) to ROS standard (X-fwd, Y-left, Z-up)
             t.transform.translation.x = z
             t.transform.translation.y = -x
             t.transform.translation.z = -y
             
-            # No rotation, so use a "zero" quaternion (w=1)
             t.transform.rotation.w = 1.0
             t.transform.rotation.x = 0.0
             t.transform.rotation.y = 0.0
@@ -368,3 +250,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
