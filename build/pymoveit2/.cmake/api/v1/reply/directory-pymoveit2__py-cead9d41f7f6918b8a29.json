@@ -1,0 +1,14 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : [],
+		"files" : [],
+		"nodes" : []
+	},
+	"installers" : [],
+	"paths" : 
+	{
+		"build" : "pymoveit2__py",
+		"source" : "/home/bhaveshk01/colcon_ws/src/build/pymoveit2/pymoveit2__py"
+	}
+}

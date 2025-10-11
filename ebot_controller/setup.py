@@ -19,8 +19,8 @@ setup(
     license='MIT',
     tests_require=['pytest'],
     entry_points={
-        'console_scripts': [
-            'ebot_nav_task1A = ebot_controller.ebot_nav_task1A:main',
-        ],
-    },
+    'console_scripts': [
+        'ebot_nav_task1A = ebot_controller.ebot_nav_task1A:main',
+    ],
+},
 )
