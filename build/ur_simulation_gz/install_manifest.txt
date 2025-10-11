@@ -1,0 +1,17 @@
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/config/ur_controllers.yaml
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/launch/spawn_arm.launch.py
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ament_index/resource_index/package_run_dependencies/ur_simulation_gz
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ament_index/resource_index/parent_prefix_path/ur_simulation_gz
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/environment/ament_prefix_path.sh
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/environment/ament_prefix_path.dsv
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/environment/path.sh
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/environment/path.dsv
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/local_setup.bash
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/local_setup.sh
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/local_setup.zsh
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/local_setup.dsv
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/package.dsv
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ament_index/resource_index/packages/ur_simulation_gz
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/cmake/ur_simulation_gzConfig.cmake
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/cmake/ur_simulation_gzConfig-version.cmake
+/home/bhaveshk01/colcon_ws/src/install/ur_simulation_gz/share/ur_simulation_gz/package.xml
