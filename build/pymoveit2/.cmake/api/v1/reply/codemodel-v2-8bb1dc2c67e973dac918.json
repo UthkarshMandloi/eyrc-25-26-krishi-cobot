@@ -1,0 +1,233 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-f077fb9aa32463501270.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17
+					]
+				},
+				{
+					"build" : "pymoveit2__py",
+					"jsonFile" : "directory-pymoveit2__py-a83c6de9512af98a6dd1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "/home/uthkarsh/colcon_ws/src/build/pymoveit2/pymoveit2__py",
+					"targetIndexes" : 
+					[
+						4
+					]
+				}
+			],
+			"name" : "",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0,
+						1
+					],
+					"name" : "pymoveit2",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16,
+						17
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_build_pymoveit2_egg::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_build_pymoveit2_egg-d0bc35e0b93122978d76.json",
+					"name" : "ament_cmake_python_build_pymoveit2_egg",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "ament_cmake_python_copy_pymoveit2::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-ament_cmake_python_copy_pymoveit2-03c256aab782a2fe93d1.json",
+					"name" : "ament_cmake_python_copy_pymoveit2",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2-3bef19424555dc556059.json",
+					"name" : "pymoveit2",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__cpp-36ee949b7e1a36981709.json",
+					"name" : "pymoveit2__cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "pymoveit2__py::@ee4bb7bb73b371d9ea47",
+					"jsonFile" : "target-pymoveit2__py-4737b3889f7dca569334.json",
+					"name" : "pymoveit2__py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_generator_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_generator_c-57783cb96158e325b664.json",
+					"name" : "pymoveit2__rosidl_generator_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_generator_py::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_generator_py-c55c5a8af4be75e52a8a.json",
+					"name" : "pymoveit2__rosidl_generator_py",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_c-8bab35873a5c881dd6b1.json",
+					"name" : "pymoveit2__rosidl_typesupport_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_c__pyext-33559ced9b2c530d6749.json",
+					"name" : "pymoveit2__rosidl_typesupport_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_cpp-865f1adfd50846a5905d.json",
+					"name" : "pymoveit2__rosidl_typesupport_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_fastrtps_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_fastrtps_c-453c14a2fe12ba70b0a6.json",
+					"name" : "pymoveit2__rosidl_typesupport_fastrtps_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_fastrtps_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_fastrtps_c__pyext-993b4a85565807da8506.json",
+					"name" : "pymoveit2__rosidl_typesupport_fastrtps_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_fastrtps_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_fastrtps_cpp-68b0da766f42b303902d.json",
+					"name" : "pymoveit2__rosidl_typesupport_fastrtps_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_introspection_c::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_introspection_c-7e6099f201fcd2c09992.json",
+					"name" : "pymoveit2__rosidl_typesupport_introspection_c",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_introspection_c__pyext::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_introspection_c__pyext-678b19454d8a07a05ed7.json",
+					"name" : "pymoveit2__rosidl_typesupport_introspection_c__pyext",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2__rosidl_typesupport_introspection_cpp::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2__rosidl_typesupport_introspection_cpp-5ba77b133be5f0f9325a.json",
+					"name" : "pymoveit2__rosidl_typesupport_introspection_cpp",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "pymoveit2_uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-pymoveit2_uninstall-4827716f0cdd06cf7f0c.json",
+					"name" : "pymoveit2_uninstall",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-8395c43e01a2c31e5022.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/uthkarsh/colcon_ws/src/build/pymoveit2",
+		"source" : "/home/uthkarsh/colcon_ws/src/pymoveit2"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 3
+	}
+}

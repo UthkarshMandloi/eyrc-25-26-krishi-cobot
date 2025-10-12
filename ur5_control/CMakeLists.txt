@@ -24,15 +24,10 @@ endif()
 # Install Python scripts
 install(PROGRAMS
     src/task1b_boiler_plate.py
-    src/bonus_task2_boiler_plate.py
-    src/task1b_complete.py
     DESTINATION lib/${PROJECT_NAME}
 )
-
-# Install the launch directory so ros2 launch can find it
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}
+install(PROGRAMS
+    src/bonus_task2_boiler_plate.py
+    DESTINATION lib/${PROJECT_NAME}
 )
-
 ament_package()
