@@ -1,6 +1,0 @@
-{
-  "package_name": "pymoveit2",
-  "non_idl_tuples": [
-    "/home/uthkarsh/colcon_ws/src/pymoveit2:srv/MoveToPose.srv"
-  ]
-}

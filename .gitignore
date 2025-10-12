@@ -1,2 +1,14 @@
-/.vscode
-/log
+# Ignore all .vscode folders
+**/.vscode/
+
+# Ignore all log folders
+**/log/
+
+# Ignore all build folders
+**/build/
+
+# Ignore all install folders
+**/install/
+
+# Ignore all .venv folders
+**/.venv/

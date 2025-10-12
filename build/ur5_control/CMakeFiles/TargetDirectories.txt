@@ -1,9 +1,0 @@
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/uninstall.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/ur5_control_uninstall.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/test.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/edit_cache.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/rebuild_cache.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/list_install_components.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/install.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/install/local.dir
-/home/uthkarsh/colcon_ws/src/build/ur5_control/CMakeFiles/install/strip.dir
