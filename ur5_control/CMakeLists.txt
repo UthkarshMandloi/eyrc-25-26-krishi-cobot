@@ -30,4 +30,8 @@ install(PROGRAMS
     src/bonus_task2_boiler_plate.py
     DESTINATION lib/${PROJECT_NAME}
 )
+install(PROGRAMS
+    src/task_1C.py
+    DESTINATION lib/${PROJECT_NAME}
+)
 ament_package()
