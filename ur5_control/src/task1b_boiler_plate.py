@@ -4,251 +4,187 @@
 '''
 *****************************************************************************************
 *
-*        		===============================================
-*           		    Krishi coBot (KC) Theme (eYRC 2025-26)
-*        		===============================================
+* ===============================================
+* Krishi coBot (KC) Theme (eYRC 2025-26)
+* ===============================================
 *
-*  This script should be used to implement Task 1B of Krishi coBot (KC) Theme (eYRC 2025-26).
+* This script should be used to implement Task 1B of Krishi coBot (KC) Theme (eYRC 2025-26).
 *
-*  This software is made available on an "AS IS WHERE IS BASIS".
-*  Licensee/end user indemnifies and will keep e-Yantra indemnified from
-*  any and all claim(s) that emanate from the use of the Software or
-*  breach of the terms of this agreement.
+* This software is made available on an "AS IS WHERE IS BASIS".
+* Licensee/end user indemnifies and will keep e-Yantra indemnified from
+* any and all claim(s) that emanate from the use of the Software or
+* breach of the terms of this agreement.
 *
 *****************************************************************************************
 '''
 
-# Team ID:          [ Team-ID ]
-# Author List:		[ Names of team members worked on this file separated by Comma: Name1, Name2, ... ]
-# Filename:		    task1b_boiler_plate.py
-# Functions:
-#			        [ Comma separated list of functions in this file ]
-# Nodes:		    Add your publishing and subscribing node
-#			        Publishing Topics  - [ /tf ]
-#                   Subscribing Topics - [ /camera/aligned_depth_to_color/image_raw, /etc... ]
+# Team ID:          eYRC#4686
+# Author List:      Uthkarsh Mandloi
+# Filename:         task1b_complete.py
+# Functions:        __init__, camera_info_callback, synchronized_callback, 
+#                   publish_fruit_transform, main
+# Global variables: None
 
 
-
-import sys
 import rclpy
 from rclpy.node import Node
-from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge
-from std_srvs.srv import Trigger
 import cv2
+import numpy as np
+import message_filters
+import tf2_ros
+from tf2_ros import TransformBroadcaster, TransformListener, Buffer
+import tf2_geometry_msgs
+from geometry_msgs.msg import TransformStamped
+import math
 
-# runtime parameters
-SHOW_IMAGE = True
-DISABLE_MULTITHREADING = False
+# Define the physical size of the ArUco marker in meters
+MARKER_SIZE_METERS = 0.04 # You may need to adjust this value
 
-class FruitsTF(Node):
-    """
-    ROS2 Boilerplate for fruit detection and TF publishing.
-    Students should implement detection logic inside the TODO sections.
-    """
-
+class FinalFruitDetectorNode(Node):
     def __init__(self):
-        super().__init__('fruits_tf')
-        self.bridge = CvBridge()
-        self.cv_image = None
-        self.depth_image = None
-
-        # callback group handling
-        if DISABLE_MULTITHREADING:
-            self.cb_group = MutuallyExclusiveCallbackGroup()
-        else:
-            self.cb_group = ReentrantCallbackGroup()
-
-        # Subscriptions
-        self.create_subscription(Image, '/camera/color/image_raw', self.colorimagecb, 10, callback_group=self.cb_group)
-        self.create_subscription(Image, '/camera/depth/image_rect_raw', self.depthimagecb, 10, callback_group=self.cb_group)
-
-        # Timer for periodic processing
-        self.create_timer(0.2, self.process_image, callback_group=self.cb_group)
-
-        if SHOW_IMAGE:
-            cv2.namedWindow('fruits_tf_view', cv2.WINDOW_NORMAL)
-
-        self.get_logger().info("FruitsTF boilerplate node started.")
-
-    # ---------------- Callbacks ----------------
-    def depthimagecb(self, data):
-        '''
-        Description:    Callback function for aligned depth camera topic. 
-                        Use this function to receive image depth data and convert to CV2 image.
-
-        Args:
-            data (Image): Input depth image frame received from aligned depth camera topic
-
-        Returns:
-            None
-        '''
-
-        ############ ADD YOUR CODE HERE ############
-
-        # INSTRUCTIONS & HELP : 
-        #   -> Use `data` variable to convert ROS Image message to CV2 Image type
-        #   -> HINT: You may use CvBridge to do the same
-        #   -> Store the converted image into `self.depth_image`
-
-        ############################################
-
-
-    def colorimagecb(self, data):
-        '''
-        Description:    Callback function for colour camera raw topic.
-                        Use this function to receive raw image data and convert to CV2 image.
-
-        Args:
-            data (Image): Input coloured raw image frame received from image_raw camera topic
-
-        Returns:
-            None
-        '''
-
-        ############ ADD YOUR CODE HERE ############
-
-        # INSTRUCTIONS & HELP :
-        #   -> Use `data` variable to convert ROS Image message to CV2 Image type
-        #   -> HINT: You may use CvBridge to do the same
-        #   -> Store the converted image into `self.cv_image`
-        #   -> Check if you need any rotation or flipping of the image 
-        #      (as input data may be oriented differently than expected).
-        #      You may use cv2 functions such as `cv2.flip` or `cv2.rotate`.
-
-        ############################################
-
-
-    def bad_fruit_detection(self, rgb_image):
-        '''
-        Description:    Function to detect bad fruits in the image frame.
-                        Use this function to detect bad fruits and return their center coordinates, distance from camera, angle, width and ids list.
-
-        Args:
-            rgb_image (cv2 image): Input coloured raw image frame received from image_raw camera topic
-
-        Returns:
-            list: A list of detected bad fruit information, where each entry is a dictionary containing:
-                - 'center': (x, y) coordinates of the fruit center
-                - 'distance': distance from the camera in meters
-                - 'angle': angle of the fruit in degrees
-                - 'width': width of the fruit in pixels
-                - 'id': unique identifier for the fruit
-        '''
-        ############ ADD YOUR CODE HERE ############
-        # INSTRUCTIONS & HELP :
-        #   ->  Implement bad fruit detection logic using image processing techniques
-        #   ->  You may use techniques such as color filtering, contour detection, etc.
-        #   ->  For each detected bad fruit, create a dictionary with its information and append
-        #       to the bad_fruits list
-        #   ->  Return the bad_fruits list at the end of the function
-        # Step 1: Convert RGB image to HSV color space
-        #   - Use cv2.cvtColor to convert the input image to HSV for better color segmentation
-
-        # Step 2: Define lower and upper HSV bounds for "bad fruit" color
-        #   - Choose HSV ranges that correspond to the color of bad fruits (e.g., brown/black spots)
-
-        # Step 3: Create a binary mask using cv2.inRange
-        #   - This mask highlights pixels within the specified HSV range
-
-        # Step 4: Find contours in the mask
-        #   - Use cv2.findContours to detect continuous regions (potential bad fruits)
-
-        # Step 5: Loop through each contour
-        #   - Filter out small contours by area threshold to remove noise
-        #   - For each valid contour:
-        #       a. Compute bounding rectangle (cv2.boundingRect)
-        #       b. Calculate center coordinates (cX, cY)
-        #       c. (Optional) Calculate distance and angle if depth data is available
-        #       d. Store fruit info (center, distance, angle, width, id) in a dictionary
-        #       e. Append dictionary to bad_fruits list
-
-        # Step 6: Return the bad_fruits list
-        bad_fruits = []
-
-        # TODO: Implement bad fruit detection logic here
-        # You may use image processing techniques such as color filtering, contour detection, etc.
-        # For each detected bad fruit, append its information to the bad_fruits list
-
-        return bad_fruits
-
-
-    def process_image(self):
-        '''
-        Description:    Timer-driven loop for periodic image processing.
-
-        Returns:
-            None
-        '''
-        ############ Function VARIABLES ############
-
-        # These are the variables defined from camera info topic such as image pixel size, focalX, focalY, etc.
-        # Make sure you verify these variable values once. As it may affect your result.
-        # You can find more on these variables here -> http://docs.ros.org/en/melodic/api/sensor_msgs/html/msg/CameraInfo.html
+        super().__init__('final_fruit_detector_node')
         
-        sizeCamX = 1280
-        sizeCamY = 720
-        centerCamX = 642.724365234375
-        centerCamY = 361.9780578613281
-        focalX = 915.3003540039062
-        focalY = 914.0320434570312
+        self.team_id = "4686" 
+
+        self.bridge = CvBridge()
+        self.camera_intrinsics = None
+        self.distortion_coeffs = None # To store camera distortion
+        self.intrinsics_received = False
+        
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.tf_broadcaster = TransformBroadcaster(self)
+
+        # ArUco Detection Setup
+        self.aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        self.aruco_params = cv2.aruco.DetectorParameters()
+
+        self.camera_info_sub = self.create_subscription(
+            CameraInfo, '/camera/camera_info', self.camera_info_callback, 10)
+        
+        color_sub = message_filters.Subscriber(self, Image, '/camera/image_raw')
+        depth_sub = message_filters.Subscriber(self, Image, '/camera/depth/image_raw')
+        self.ts = message_filters.ApproximateTimeSynchronizer([color_sub, depth_sub], 10, 0.1)
+        self.ts.registerCallback(self.synchronized_callback)
+        
+        self.get_logger().info("Final fruit and ArUco detector node has been started.")
+
+    def camera_info_callback(self, msg):
+        if not self.intrinsics_received:
+            self.camera_intrinsics = np.array(msg.k).reshape(3, 3)
+            self.distortion_coeffs = np.array(msg.d) # Save distortion coefficients
+            self.intrinsics_received = True
+            self.get_logger().info("Camera intrinsics and distortion coeffs received.")
+            self.destroy_subscription(self.camera_info_sub)
+
+    def synchronized_callback(self, rgb_msg, depth_msg):
+        if not self.intrinsics_received:
+            return
+
+        try:
+            cv_image_rgb = self.bridge.imgmsg_to_cv2(rgb_msg, "bgr8")
+            cv_image_depth = self.bridge.imgmsg_to_cv2(depth_msg, "32FC1")
+        except Exception as e:
+            self.get_logger().error(f"Failed to convert images: {e}")
+            return
+
+        # =================================================================
+        # --- FRUIT DETECTION LOGIC  ---
+        # =================================================================
+        hsv_image = cv2.cvtColor(cv_image_rgb, cv2.COLOR_BGR2HSV)
+        lower_fruit_body = np.array([0, 0, 48])
+        upper_fruit_body = np.array([42, 71, 175])
+        fruit_body_mask = cv2.inRange(hsv_image, lower_fruit_body, upper_fruit_body)
+        kernel = np.ones((5, 5), np.uint8)
+        fruit_body_mask = cv2.morphologyEx(fruit_body_mask, cv2.MORPH_OPEN, kernel)
+        contours, _ = cv2.findContours(fruit_body_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        bad_fruit_id_counter = 1
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            if area < 1600 or area > 3000:
+                continue
+            x, y, w, h = cv2.boundingRect(contour)
+            (cx, cy), radius = cv2.minEnclosingCircle(contour)
+            vertical_offset = y - (cy - radius)
+            if vertical_offset < 5:
+                continue
+            roi_hsv = hsv_image[y:y+h, x:x+w]
+            lower_green = np.array([35, 50, 50])
+            upper_green = np.array([85, 255, 255])
+            green_mask = cv2.inRange(roi_hsv, lower_green, upper_green)
+            if cv2.countNonZero(green_mask) > 20: 
+                cv2.rectangle(cv_image_rgb, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.circle(cv_image_rgb, (int(cx), int(cy)), int(radius), (0, 255, 0), 2)
+                cv2.putText(cv_image_rgb, "bad_fruit", (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                M = cv2.moments(contour)
+                if M["m00"] <= 0: continue
+                cx_int = int(M["m10"] / M["m00"])
+                cy_int = int(M["m01"] / M["m00"])
+                depth = cv_image_depth[cy_int, cx_int]
+                if np.isnan(depth) or depth == 0: continue
+                self.publish_fruit_transform(cx_int, cy_int, depth, bad_fruit_id_counter, rgb_msg.header.stamp)
+                bad_fruit_id_counter += 1
+        # --- END OF FRUIT DETECTION LOGIC ---
+
+
+        # =================================================================
+        # --- ARUCO MARKER DETECTION LOGIC ---
+        # =================================================================
+        gray_image = cv2.cvtColor(cv_image_rgb, cv2.COLOR_BGR2GRAY)
+        corners, ids, rejected = cv2.aruco.detectMarkers(gray_image, self.aruco_dict, parameters=self.aruco_params)
+        
+        # If any markers are detected
+        if ids is not None:
+            # Draw borders around detected markers
+            cv2.aruco.drawDetectedMarkers(cv_image_rgb, corners, ids)
             
+            # Estimate pose for each marker
+            rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, MARKER_SIZE_METERS, self.camera_intrinsics, self.distortion_coeffs)
+            
+            # Draw the 3D axes on each marker
+            for i in range(len(ids)):
+                cv2.drawFrameAxes(cv_image_rgb, self.camera_intrinsics, self.distortion_coeffs, rvecs[i], tvecs[i], 0.3)
+        # --- END OF ARUCO DETECTION LOGIC ---
 
-        ############ ADD YOUR CODE HERE ############
+        cv2.imshow("Live Camera Feed", cv_image_rgb)
+        cv2.waitKey(1)
 
-        # INSTRUCTIONS & HELP : 
-
-        #   ->  Get fruit center, distance from rgb, angle, width and ids list from 'detect_fruit_center' defined above
-
-        #   ->  Loop over detected box ids received to calculate position and orientation transform to publish TF 
-
-        #   
-        #   ->  Use center_fruit_list to get realsense depth and log them down.
-
-        #   ->  Use this formula to rectify x, y, z based on focal length, center value and size of image
-        #       x = distance_from_rgb * (sizeCamX - cX - centerCamX) / focalX
-        #       y = distance_from_rgb * (sizeCamY - cY - centerCamY) / focalY
-        #       z = distance_from_rgb
-        #       where, 
-        #               cX, and cY from 'center_fruit_list'
-        #               distance_from_rgb is depth of object calculated in previous step
-        #               sizeCamX, sizeCamY, centerCamX, centerCamY, focalX and focalY are defined above
-
-        #   ->  Now, mark the center points on image frame using cX and cY variables with help of 'cv2.circle' function 
-
-        #   ->  Here, till now you receive coordinates from camera_link to fruit center position. 
-        #       So, publish this transform w.r.t. camera_link using Geometry Message - TransformStamped 
-        #       so that we will collect its position w.r.t base_link in next step.
-        #       Use the following frame_id-
-        #           frame_id = 'camera_link'
-        #           child_frame_id = 'cam_<fruit_id>'          Ex: cam_20, where 20 is fruit ID
-
-        #   ->  Then finally lookup transform between base_link and obj frame to publish the TF
-        #       You may use 'lookup_transform' function to pose of obj frame w.r.t base_link 
-
-        #   ->  And now publish TF between object frame and base_link
-        #       Use the following frame_id-
-        #           frame_id = 'base_link'
-        #           child_frame_id = f'{teamid}_bad_fruit_{fruit_id}'    Ex: 5_bad_fruit_1, where 5 is team ID and 1 is fruit ID
-
-        #   ->  At last show cv2 image window having detected markers drawn and center points located using 'cv2.imshow' function.
-        #       Refer MD book on portal for sample image -> https://portal.e-yantra.org/
-
+    def publish_fruit_transform(self, cx, cy, depth, fruit_id, timestamp):
+        # This function remains unchanged and is only for fruits
+        fx, fy = self.camera_intrinsics[0, 0], self.camera_intrinsics[1, 1]
+        c_x, c_y = self.camera_intrinsics[0, 2], self.camera_intrinsics[1, 2]
+        cam_x = (cx - c_x) * depth / fx
+        cam_y = (cy - c_y) * depth / fy
+        cam_z = depth
+        try:
+            transform = self.tf_buffer.lookup_transform('base_link', 'camera_optical_frame', rclpy.time.Time())
+            point_in_camera = tf2_geometry_msgs.PointStamped()
+            point_in_camera.header.frame_id = 'camera_optical_frame'
+            point_in_camera.point.x, point_in_camera.point.y, point_in_camera.point.z = float(cam_x), float(cam_y), float(cam_z)
+            point_in_base = tf2_geometry_msgs.do_transform_point(point_in_camera, transform)
+            t = TransformStamped()
+            t.header.stamp, t.header.frame_id = timestamp, 'base_link'
+            t.child_frame_id = f'{self.team_id}_bad_fruit_{fruit_id}'
+            t.transform.translation.x, t.transform.translation.y, t.transform.translation.z = float(point_in_base.point.x), float(point_in_base.point.y), float(point_in_base.point.z)
+            t.transform.rotation.w = 1.0
+            self.tf_broadcaster.sendTransform(t)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
+            self.get_logger().warn(f"TF lookup failed: {e}")
 
 def main(args=None):
     rclpy.init(args=args)
-    node = FruitsTF()
-    try:
+    node = FinalFruitDetectorNode()
+    try: 
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except KeyboardInterrupt: 
         pass
     finally:
-        node.get_logger().info("Shutting down FruitsTF")
         node.destroy_node()
         rclpy.shutdown()
-        if SHOW_IMAGE:
-            cv2.destroyAllWindows()
+        cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     main()
