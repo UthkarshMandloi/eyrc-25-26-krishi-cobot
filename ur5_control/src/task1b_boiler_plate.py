@@ -13,7 +13,9 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter  # This import is still needed
 from sensor_msgs.msg import Image, CameraInfo
+# ... (rest of imports are the same)
 from cv_bridge import CvBridge
 import cv2
 import numpy as np
@@ -59,6 +61,7 @@ class FinalDetectorNode(Node):
         # These will be populated by the camera_info callback
         self.camera_intrinsics = None
         self.distortion_coeffs = None
+        self.distortion_coeffs = None
         self.intrinsics_received = False
         
         # ArUco Detection Setup
@@ -77,6 +80,7 @@ class FinalDetectorNode(Node):
         
         self.get_logger().info("Final Detector with all features has been started.")
 
+    # camera_info_callback and synchronized_callback can remain the same as the previous correct version
     def camera_info_callback(self, msg):
         '''
         Purpose:
@@ -98,6 +102,7 @@ class FinalDetectorNode(Node):
         '''
         if not self.intrinsics_received:
             self.camera_intrinsics = np.array(msg.k).reshape(3, 3)
+            self.distortion_coeffs = np.array(msg.d)
             self.distortion_coeffs = np.array(msg.d)
             self.intrinsics_received = True
             self.get_logger().info("Camera intrinsics received dynamically.")
