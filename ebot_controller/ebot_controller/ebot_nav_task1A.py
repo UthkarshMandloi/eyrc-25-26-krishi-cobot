@@ -16,182 +16,133 @@ def quaternion_to_yaw(qx, qy, qz, qw):
     return math.atan2(siny_cosp, cosy_cosp)
 
 def normalize_angle(angle):
-    while angle > math.pi:
-        angle -= 2.0 * math.pi
-    while angle < -math.pi:
-        angle += 2.0 * math.pi
+    while angle > math.pi: angle -= 2.0 * math.pi
+    while angle < -math.pi: angle += 2.0 * math.pi
     return angle
 
 class EbotNavigator(Node):
     def _init_(self):
         super()._init_('ebot_nav')
 
-        qos_profile = QoSProfile(
-            reliability=ReliabilityPolicy.RELIABLE,
-            history=HistoryPolicy.KEEP_LAST,
-            depth=1,
-            durability=DurabilityPolicy.VOLATILE
-        )
-
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', qos_profile)
-        self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
-        self.create_subscription(LaserScan, '/scan', self.lidar_callback, 10)
+        qos_profile = QoSProfile(reliability=ReliabilityPolicy.RELIABLE, history=HistoryPolicy.KEEP_LAST, depth=10)
+        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.create_subscription(Odometry, '/odom', self.odom_callback, qos_profile)
+        self.create_subscription(LaserScan, '/scan', self.lidar_callback, qos_profile)
 
         self.x, self.y, self.yaw = 0.0, 0.0, 0.0
-        self.start_x, self.start_y = None, None
         self.laser_ranges = []
-        self.odom_received = False
-        self.centering_error_previous = 0.0
-        self.last_time = self.get_clock().now()
+        self.lidar_angle_min, self.lidar_angle_increment = 0.0, 0.0
+        self.odom_received, self.lidar_received = False, False
 
+        # ### --- THE NEW TRAJECTORY WITH THE ORIGIN FOR P3 ALIGNMENT --- ###
+        # Calculate the perfect yaw to face P3 from the Origin
+        p3_x, p3_y = 0.38, -3.32
+        yaw_origin_to_p3 = math.atan2(p3_y - 0.0, p3_x - 0.0) 
         self.waypoints = [
-            (-1.53, -1.95,  1.57),
-            (0.13,  1.24,  0.00),
-            (0.38, -3.20, -1.57)
+            (-1.53, -1.95, 1.57),          # P1
+            (0.13,   1.24, 0.00),          # P2
+            (0.0,    0.0,  yaw_origin_to_p3), # The Origin, with a calculated yaw to perfectly face P3
+            (p3_x,   p3_y, -1.57)           # P3
         ]
-        self.pos_tolerance = 0.2
-        self.yaw_tolerance = math.radians(6.0)
+        self.pos_tolerance, self.yaw_tolerance = 0.15, math.radians(5.0)
 
-        self.k_linear = 2.0
-        self.k_angular = 2.5
-        self.k_rotate = 3.5
-        self.max_lin_speed = 0.6
-        self.max_rot_speed = 2.8
-
-        self.k_p_centering = 1.5
-        self.k_d_centering = 0.8
-        self.corridor_detection_dist = 0.5
+        # High performance speeds
+        self.k_linear, self.k_angular, self.k_rotate = 2.0, 3.0, 3.5
+        self.max_lin_speed, self.max_rot_speed = 2.0, 2.0
+        
+        self.safety_stop_dist, self.slowdown_dist = 0.30, 0.7
+        self.side_safety_dist, self.nudge_gain = 0.28, 2.0
+        
+        self.final_push_stop_dist = 0.2
 
         self.current_idx = 0
-        self.state = 'INITIAL_ADVANCE'
+        self.state = 'ROTATE_TO_GOAL'
+        self.get_logger().info('FINAL CODE with ORIGIN ALIGNMENT & FULL LiDAR: INITIALIZED.')
         self.timer = self.create_timer(0.05, self.control_loop)
 
-        self.get_logger().info('Ebot navigator node started with FINAL, GUARANTEED FIX.')
-
     def odom_callback(self, msg: Odometry):
-        self.x = msg.pose.pose.position.x
-        self.y = msg.pose.pose.position.y
-        if self.start_x is None:
-            self.start_x, self.start_y = self.x, self.y
-        q = msg.pose.pose.orientation
-        # ✅ Fixed: yaw sign corrected
-        self.yaw = quaternion_to_yaw(q.x, q.y, q.z, q.w)
+        self.x, self.y = msg.pose.pose.position.x, msg.pose.pose.position.y
+        q = msg.pose.pose.orientation; self.yaw = quaternion_to_yaw(q.x, q.y, q.z, q.w)
         self.odom_received = True
 
     def lidar_callback(self, msg: LaserScan):
-        self.laser_ranges = msg.ranges
+        self.laser_ranges, self.lidar_angle_min, self.lidar_angle_increment = msg.ranges, msg.angle_min, msg.angle_increment
+        self.lidar_received = True
+
+    def get_min_dist_in_arc(self, start_angle_deg, end_angle_deg):
+        if not self.lidar_received or not self.laser_ranges: return 100.0
+        num_readings = len(self.laser_ranges); center_index = num_readings // 2
+        start_index = (center_index + int(math.radians(start_angle_deg) / self.lidar_angle_increment)) % num_readings
+        end_index = (center_index + int(math.radians(end_angle_deg) / self.lidar_angle_increment)) % num_readings
+        if start_index > end_index: arc = self.laser_ranges[start_index:] + self.laser_ranges[:end_index+1]
+        else: arc = self.laser_ranges[start_index:end_index+1]
+        valid_readings = [r for r in arc if r > 0.1 and not (math.isinf(r) or math.isnan(r))]
+        return min(valid_readings) if valid_readings else 100.0
+
+    def get_obstacle_modifiers(self):
+        front_dist = self.get_min_dist_in_arc(-15, 15); left_dist = self.get_min_dist_in_arc(35, 65); right_dist = self.get_min_dist_in_arc(-65, -35)
+        linear_scale = 1.0
+        if front_dist < self.safety_stop_dist: linear_scale = 0.0
+        elif front_dist < self.slowdown_dist: linear_scale = (front_dist - self.safety_stop_dist) / (self.slowdown_dist - self.safety_stop_dist)
+        angular_nudge = 0.0
+        if left_dist < self.side_safety_dist: angular_nudge = -self.nudge_gain * (self.side_safety_dist - left_dist)
+        elif right_dist < self.side_safety_dist: angular_nudge = self.nudge_gain * (self.side_safety_dist - right_dist)
+        return linear_scale, angular_nudge
 
     def control_loop(self):
-        # ✅ Fixed: allow movement even if /scan late
-        if not self.odom_received or self.start_x is None:
-            return
-
-        if self.state == 'DONE':
-            return
-        if self.current_idx >= len(self.waypoints):
-            if self.state != 'DONE':
-                self.get_logger().info("🎉 All waypoints reached. Task complete.")
-                self.stop_robot()
-                self.state = 'DONE'
-                # ✅ Fixed: clean shutdown, no extra timer
-                rclpy.shutdown()
+        if not self.odom_received or not self.lidar_received: return
+        if self.state == 'DONE': return
+        
+        if self.state == 'FINAL_PUSH_SAFE':
+            front_dist = self.get_min_dist_in_arc(-5, 5) 
+            if front_dist > self.final_push_stop_dist:
+                cmd = Twist(); cmd.linear.x = 0.15; self.cmd_pub.publish(cmd)
+            else:
+                self.get_logger().info(f"BAN BANG! Mission Complete. Wall at {front_dist:.2f}m.")
+                self.stop_robot(); self.state = 'DONE'
             return
 
         cmd = Twist()
         cmd = Twist()
         goal_x, goal_y, goal_yaw = self.waypoints[self.current_idx]
-
-        if self.state == 'INITIAL_ADVANCE':
-            distance_traveled = math.hypot(self.x - self.start_x, self.y - self.start_y)
-            if distance_traveled < 0.7:
-                cmd.linear.x = 0.3
-                self.cmd_pub.publish(cmd)
-                return
-            else:
-                self.get_logger().info('✅ Initial advance complete. Starting navigation.')
-                self.stop_robot()
-                self.state = 'ROTATE_TO_GOAL'
-
         distance_to_goal = math.hypot(goal_x - self.x, goal_y - self.y)
-        angle_to_goal = math.atan2(goal_y - self.y, goal_x - self.x)
-        angle_error = normalize_angle(angle_to_goal - self.yaw)
+        world_angle_to_goal = math.atan2(goal_y - self.y, goal_x - self.x)
+        angle_to_goal = normalize_angle(world_angle_to_goal - self.yaw)
         final_yaw_error = normalize_angle(goal_yaw - self.yaw)
 
-        if self.state == 'ROTATE_TO_GOAL':
-            if abs(angle_error) > math.radians(2.0):
-                cmd.angular.z = self.k_rotate * angle_error
+        if self.state == 'ROTATE_TO_GOAL' or self.state == 'ROTATE_FINAL':
+            target_angle_error = angle_to_goal if self.state == 'ROTATE_TO_GOAL' else final_yaw_error
+            if abs(target_angle_error) > self.yaw_tolerance: cmd.angular.z = self.k_rotate * target_angle_error
             else:
                 self.stop_robot()
-                self.state = 'MOVE_TO_GOAL'
-                self.get_logger().info(f"➡️ Aligned. Moving to waypoint {self.current_idx+1}.")
-
+                if self.state == 'ROTATE_TO_GOAL':
+                    self.state = 'MOVE_TO_GOAL'
+                    self.get_logger().info(f"➡️ Aligned. Moving to WP-{self.current_idx + 1} ({goal_x:.2f}, {goal_y:.2f}).")
+                else: # ROTATE_FINAL is complete
+                    self.get_logger().info(f"✅ Waypoint {self.current_idx + 1} achieved.")
+                    time.sleep(0.2)
+                    self.current_idx += 1
+                    if self.current_idx >= len(self.waypoints): self.state = 'FINAL_PUSH_SAFE' 
+                    else: self.state = 'ROTATE_TO_GOAL'
+        
         elif self.state == 'MOVE_TO_GOAL':
             if distance_to_goal > self.pos_tolerance:
-                now = self.get_clock().now()
-                dt = (now - self.last_time).nanoseconds / 1e9
-                # ✅ Fixed: derivative protection
-                if dt <= 0.0:
-                    dt = 1e-3
-                self.last_time = now
-
-                _, left_dist, right_dist = self.get_navigation_distances()
-                centering_error = left_dist - right_dist
-                p_force = self.k_p_centering * centering_error
-                error_derivative = (centering_error - self.centering_error_previous) / dt
-                d_force = self.k_d_centering * error_derivative
-                self.centering_error_previous = centering_error
-
-                steering_adjustment = 0.0
-                if left_dist < self.corridor_detection_dist or right_dist < self.corridor_detection_dist:
-                    steering_adjustment = p_force + d_force
-                    self.get_logger().warn(
-                        f'Corridor Nav Active: L:{left_dist:.2f} R:{right_dist:.2f} Steer:{steering_adjustment:.2f}',
-                        throttle_duration_sec=0.5)
-
-                cmd.linear.x = self.k_linear * distance_to_goal
-                cmd.angular.z = (self.k_angular * angle_error) + steering_adjustment
+                # ### --- THIS IS THE KEY FIX - OBSTACLE AVOIDANCE REACTIVATED --- ###
+                # The robot now steers toward the goal AND nudges away from walls simultaneously.
+                base_linear_speed = self.k_linear * distance_to_goal
+                base_angular_speed = self.k_angular * angle_to_goal
+                linear_scale, angular_nudge = self.get_obstacle_modifiers()
+                cmd.linear.x = base_linear_speed * linear_scale
+                cmd.angular.z = base_angular_speed + angular_nudge
             else:
-                self.stop_robot()
-                self.state = 'ROTATE_FINAL'
-                self.get_logger().info(f"📍 Position reached. Aligning to final yaw.")
-
-        elif self.state == 'ROTATE_FINAL':
-            if abs(final_yaw_error) > self.yaw_tolerance:
-                cmd.angular.z = self.k_rotate * final_yaw_error
-            else:
-                self.get_logger().info(f"✅ Waypoint {self.current_idx+1} achieved.")
-                self.stop_robot()
-                time.sleep(0.2)
-                self.current_idx += 1
-                self.state = 'ROTATE_TO_GOAL' if self.current_idx < len(self.waypoints) else 'DONE'
+                self.stop_robot(); self.state = 'ROTATE_FINAL'
+                self.get_logger().info(f"📍 Position reached for WP-{self.current_idx+1}. Aligning.")
 
         cmd.linear.x = max(0.0, min(self.max_lin_speed, cmd.linear.x))
         cmd.angular.z = max(-self.max_rot_speed, min(self.max_rot_speed, cmd.angular.z))
         self.cmd_pub.publish(cmd)
 
-    def stop_robot(self):
-        self.cmd_pub.publish(Twist())
-
-    def get_sector_ranges(self, start_deg, end_deg):
-        if not self.laser_ranges:
-            return []
-        num_readings = len(self.laser_ranges)
-        start_idx = int((start_deg % 360) * num_readings / 360)
-        end_idx = int((end_deg % 360) * num_readings / 360)
-        if start_idx <= end_idx:
-            sector = self.laser_ranges[start_idx:end_idx]
-        else:
-            sector = self.laser_ranges[start_idx:] + self.laser_ranges[:end_idx]
-        return [r for r in sector if r > 0.0 and not (math.isinf(r) or math.isnan(r))]
-
-    def get_navigation_distances(self):
-        front_ranges = self.get_sector_ranges(345, 15)
-        left_ranges = self.get_sector_ranges(25, 75)
-        right_ranges = self.get_sector_ranges(285, 335)
-        front_dist = min(front_ranges) if front_ranges else 100.0
-        left_dist = min(left_ranges) if left_ranges else 100.0
-        right_dist = min(right_ranges) if right_ranges else 100.0
-        return front_dist, left_dist, right_dist
+    def stop_robot(self): self.cmd_pub.publish(Twist())
 
 def main(args=None):
     rclpy.init(args=args)
@@ -199,8 +150,6 @@ def main(args=None):
     try: rclpy.spin(node)
     except KeyboardInterrupt: node.get_logger().info('Keyboard interrupt, stopping node.')
     finally:
-        if rclpy.ok():
-            node.destroy_node()
-            rclpy.try_shutdown()
+        if rclpy.ok(): node.stop_robot(); node.destroy_node(); rclpy.try_shutdown()
 
-if _name_ == '_main_': main()
+if __name__ == '__main__': main()
