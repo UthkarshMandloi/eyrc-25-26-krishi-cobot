@@ -5,9 +5,11 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
 import math
 import time
 
+# --- Helper Functions ---
 def quaternion_to_yaw(qx, qy, qz, qw):
     siny_cosp = 2.0 * (qw * qz + qx * qy)
     cosy_cosp = 1.0 - 2.0 * (qy * qy + qz * qz)
@@ -21,8 +23,8 @@ def normalize_angle(angle):
     return angle
 
 class EbotNavigator(Node):
-    def __init__(self):
-        super().__init__('ebot_nav')
+    def _init_(self):
+        super()._init_('ebot_nav')
 
         qos_profile = QoSProfile(
             reliability=ReliabilityPolicy.RELIABLE,
@@ -95,6 +97,7 @@ class EbotNavigator(Node):
                 rclpy.shutdown()
             return
 
+        cmd = Twist()
         cmd = Twist()
         goal_x, goal_y, goal_yaw = self.waypoints[self.current_idx]
 
@@ -193,14 +196,11 @@ class EbotNavigator(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = EbotNavigator()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        node.get_logger().info('Keyboard interrupt, stopping node.')
+    try: rclpy.spin(node)
+    except KeyboardInterrupt: node.get_logger().info('Keyboard interrupt, stopping node.')
     finally:
         if rclpy.ok():
             node.destroy_node()
             rclpy.try_shutdown()
 
-if __name__ == '__main__':
-    main()
+if _name_ == '_main_': main()
