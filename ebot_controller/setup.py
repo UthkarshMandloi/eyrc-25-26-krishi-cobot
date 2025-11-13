@@ -25,6 +25,9 @@ setup(
     entry_points={
         'console_scripts': [
             'ebot_nav_task1A = ebot_controller.ebot_nav_task1A:main',
+            'ebot_nav_task2a = ebot_controller.ebot_nav_task2a:main',
+            'shape_detector_task2a = ebot_controller.shape_detector_task2a:main',
+
         ],
     },
 )
