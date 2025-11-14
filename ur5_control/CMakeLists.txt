@@ -34,4 +34,16 @@ install(PROGRAMS
     src/task_1C.py
     DESTINATION lib/${PROJECT_NAME}
 )
+install(PROGRAMS
+    src/task2b1.py
+    DESTINATION lib/${PROJECT_NAME}
+)
+install(PROGRAMS
+    src/task2b_manipulation.py
+    DESTINATION lib/${PROJECT_NAME}
+)
+install(PROGRAMS
+    src/task2b_try.py
+    DESTINATION lib/${PROJECT_NAME}
+)
 ament_package()
