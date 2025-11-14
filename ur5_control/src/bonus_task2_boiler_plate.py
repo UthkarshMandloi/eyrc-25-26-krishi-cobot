@@ -297,7 +297,29 @@ class aruco_tf(Node):
         #           child_frame_id = 'obj_<marker_id>'          Ex: obj_20, where 20 is aruco marker ID
 
         #   ->  At last show cv2 image window having detected markers drawn and center points located using 'cv2.imshow' function.
-        #       Refer MD book on portal for sample image -> https://portal.e-yantra.org/
+        #       Refer MD book on portal for sample image -> https://portal.e-yantra.org/        self.laser_ranges = msg.ranges
+
+    def control_loop(self):
+        # ✅ Fixed: allow movement even if /scan late
+        if not self.odom_received or self.start_x is None:
+            return
+
+        if self.state == 'DONE':
+            return
+        if self.current_idx >= len(self.waypoints):
+            if self.state != 'DONE':
+                self.get_logger().info("🎉 All waypoints reached. Task complete.")
+                self.stop_robot()
+                self.state = 'DONE'
+                # ✅ Fixed: clean shutdown, no extra timer
+                rclpy.shutdown()
+            return
+
+        cmd = Twist()
+        cmd = Twist()
+        goal_x, goal_y, goal_yaw = self.waypoints[self.current_idx]
+
+
 
         #   ->  NOTE:   The Z axis of TF should be pointing inside the box (Purpose of this will be known in task 1C)
         #               Also, auto eval script will be judging angular difference as well. So, make sure that Z axis is inside the box (Refer sample images on Portal - MD book)
