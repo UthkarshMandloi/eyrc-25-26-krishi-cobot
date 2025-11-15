@@ -1,0 +1,180 @@
+# FILE: ebot_controller/ebot_controller/ebot_nav_task2a.py
+
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+from rclpy.executors import MultiThreadedExecutor ## MODIFIED ## (Still needed in main)
+import time
+import math
+
+from ebot_controller.bot_pid_controller import BotController
+
+# Define states for our State Machine
+class State:
+    NAVIGATING = 0
+    STOPPING_FOR_SHAPE = 1
+    STOPPING_FOR_DOCK = 2
+    TASK_COMPLETE = 3
+
+class NavigationNode(Node):
+    def __init__(self):
+        super().__init__('ebot_nav_task2a')
+        
+        # --- Waypoints ---
+        self.waypoints = [
+            {'x': 0.26, 'y': -1.95, 'theta': 1.57},   # P1 (Dock)
+            {'x': -1.48, 'y': -0.67, 'theta': -1.57}, # P2 (Mid-aisle)
+            {'x': -1.53, 'y': -6.61, 'theta': -1.57}  # P3 (Start/End)
+        ]
+        self.current_goal_index = 0
+        
+        # --- State Machine ---
+        self.state = State.NAVIGATING
+        
+        # --- Robot Controller ---
+        ## MODIFIED ##: We just create the controller object.
+        # The main() function will add it to the executor.
+        self.controller = BotController()
+        
+        # ... inside __init__ of NavigationNode ...
+
+# --- Robot Controller ---
+self.controller = BotController()
+self.executor = MultiThreadedExecutor()  # <-- MAKE SURE THIS LINE EXISTS AND IS NOT COMMENTED OUT
+self.executor.add_node(self.controller)  # <-- This is your error line (line 38)
+
+# --- ROS Comms ---
+# ...
+        
+        # --- ROS Comms ---
+        self.detection_publisher = self.create_publisher(String, '/detection_status', 10)
+        self.shape_subscriber = self.create_subscription(String, '/shape_detected', self.shape_callback, 10)
+        
+        # --- Detection Logic ---
+        self.detected_shapes = set() 
+        self.shape_stop_timer = None
+        self.stop_duration = 2.0 # 2 seconds
+        
+        # Start the main control loop
+        self.control_loop_timer = self.create_timer(0.1, self.control_loop)
+        
+        self.get_logger().info('Navigation Node is READY. Starting task...')
+
+    def control_loop(self):
+        """Main state machine loop."""
+        
+        ## MODIFIED ##: REMOVED this line:
+        # self.executor.spin_once(timeout_sec=0.0)
+        # The main executor now spins the controller automatically.
+        
+        if self.state == State.NAVIGATING:
+            goal = self.waypoints[self.current_goal_index]
+            goal_reached = self.controller.go_to_goal(goal)
+            
+            if goal_reached:
+                self.get_logger().info(f'Reached Goal {self.current_goal_index + 1}')
+                
+                if self.current_goal_index == 0: # This is P1 (Dock)
+                    self.state = State.STOPPING_FOR_DOCK
+                    self.get_logger().info('Dock reached. Stopping for 2s.')
+                    self.report_detection("DOCK_STATION", goal['x'], goal['y'])
+                    self.shape_stop_timer = time.time()
+                
+                elif self.current_goal_index == 2: # This is P3 (End)
+                    self.state = State.TASK_COMPLETE
+                    self.controller.stop()
+                    self.get_logger().info('Task Complete! Final waypoint reached.')
+                
+                else: # Any other waypoint (P2)
+                    self.current_goal_index += 1
+        
+        elif self.state == State.STOPPING_FOR_SHAPE:
+            self.controller.stop()
+            if time.time() - self.shape_stop_timer > self.stop_duration:
+                self.get_logger().info('2s stop complete. Resuming navigation.')
+                self.state = State.NAVIGATING
+        
+        elif self.state == State.STOPPING_FOR_DOCK:
+            self.controller.stop()
+            if time.time() - self.shape_stop_timer > self.stop_duration:
+                self.get_logger().info('Dock stop complete. Proceeding to next goal.')
+                self.current_goal_index += 1
+                self.state = State.NAVIGATING
+
+        elif self.state == State.TASK_COMPLETE:
+            self.controller.stop()
+            self.control_loop_timer.cancel() 
+            self.get_logger().info('Shutting down navigation node.')
+            rclpy.try_shutdown() ## MODIFIED ##: Safe shutdown request
+
+    def shape_callback(self, msg):
+        """Reacts to a detected shape from the shape_detector node."""
+        if self.state != State.NAVIGATING:
+            return 
+            
+        parts = msg.data.split(',')
+        if len(parts) < 3: return 
+        
+        shape_type = parts[0]
+        try:
+            x, y = float(parts[1]), float(parts[2])
+        except ValueError:
+            self.get_logger().warn(f'Invalid shape message: {msg.data}')
+            return
+
+        if shape_type in ["TRIANGLE", "SQUARE"] and shape_type not in self.detected_shapes and self.is_shape_relevant(x, y):
+            self.get_logger().info(f'Detected new shape: {shape_type}. Stopping!')
+            self.state = State.STOPPING_FOR_SHAPE
+            self.shape_stop_timer = time.time()
+            self.detected_shapes.add(shape_type)
+            
+            status = "FERTILIZER_REQUIRED" if shape_type == "TRIANGLE" else "BAD_HEALTH"
+            self.report_detection(status, x, y)
+
+    def is_shape_relevant(self, shape_x, shape_y):
+        """Checks if the detected shape is close enough to the robot to stop."""
+        current_pose = self.controller.current_pose
+        dist = math.sqrt((shape_x - current_pose['x'])**2 + (shape_y - current_pose['y'])**2)
+        
+        return dist < 1.0
+
+    def report_detection(self, status, x, y):
+        """Publishes the detection message."""
+        msg = String()
+        msg.data = f"{status},{x:.2f},{y:.2f}"
+        self.detection_publisher.publish(msg)
+        self.get_logger().info(f'Published: {msg.data}')
+
+## ----------------------------------------------------------------- ##
+## MODIFIED ##: The main function is completely updated
+## ----------------------------------------------------------------- ##
+def main(args=None):
+    rclpy.init(args=args)
+    
+    try:
+        nav_node = NavigationNode()
+        
+        # Create an executor and add BOTH nodes to it
+        executor = MultiThreadedExecutor()
+        executor.add_node(nav_node)
+        executor.add_node(nav_node.controller) # Add the controller node
+        
+        try:
+            # Spin the executor to run callbacks for BOTH nodes
+            executor.spin()
+        except KeyboardInterrupt:
+            nav_node.get_logger().info('KeyboardInterrupt, shutting down.')
+        finally:
+            # Cleanly shutdown
+            executor.shutdown()
+            nav_node.controller.destroy_node()
+            nav_node.destroy_node()
+            
+    except Exception as e:
+        print(f'Unhandled exception in main: {e}')
+    finally:
+        if rclpy.ok():
+            rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
